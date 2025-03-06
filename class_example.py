@@ -1,6 +1,6 @@
 from mip import Model, xsum, minimize, maximize, BINARY, INTEGER, OptimizationStatus
 
-def KP ():
+def knap_sack ():
     n=4
     items = ['A', 'B', 'C', 'D']
     weights = [5, 7, 4, 6]
@@ -21,7 +21,7 @@ def KP ():
             if take[i].x == 1:
                 print(items[i], ": Taken")
 
-KP()
+knap_sack()
 
 def solve_assignment_problem(cost_matrix):
     num_workers = len(cost_matrix)

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SonarLintProjectSettings">
+    <option name="bindingEnabled" value="true" />
+    <option name="projectKey" value="LunyaticCat_OptimizationProject_c54b0067-05d4-4c50-948d-873eff87d25c" />
+    <option name="serverId" value="LunaticCat's private sonar" />
+  </component>
+</project>
