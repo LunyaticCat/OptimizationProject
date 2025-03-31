@@ -44,7 +44,7 @@ class AircraftLanding:
 
 from mip import Constr
 
-def solver(aircraft_landing: AircraftLanding):
+def solver(aircraft_landing: AircraftLanding, additional_constraints: List[Model] = None):
     model = Model("Aircraft Landing")
 
     # Decision variables
@@ -80,6 +80,10 @@ def solver(aircraft_landing: AircraftLanding):
                     model += landing_times_decision[j] + aircraft_landing.separation_times[j][i] <= landing_times_decision[i] + \
                              landing_order[i][j] * big_number_variable
                     model += runway_assignment[i][r] + runway_assignment[j][r] <= 1 + landing_order[i][j]
+
+    if additional_constraints is not None:
+        for constraint in additional_constraints:
+            model += constraint
 
     status = model.optimize(max_seconds=2)
     print("Status: ", OptimizationStatus(status))
