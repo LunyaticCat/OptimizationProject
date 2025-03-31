@@ -42,26 +42,51 @@ class AircraftLanding:
         self.separation_times = separation_times
 
 
+from mip import Constr
+
 def solver(aircraft_landing: AircraftLanding):
     model = Model("Aircraft Landing")
 
     # Decision variables
     landing_times_decision = [model.add_var(var_type=CONTINUOUS, name=f"landing_time_{i}")
-                    for i in range(aircraft_landing.n_aircraft)]
+                               for i in range(aircraft_landing.n_aircraft)]
+
+    runway_assignment = [[model.add_var(var_type=BINARY, name=f"runway_{i}_{r}")
+                          for r in range(aircraft_landing.n_runways)]
+                         for i in range(aircraft_landing.n_aircraft)]
+
+    landing_order = [[model.add_var(var_type=BINARY, name=f"order_{i}_{j}")
+                      for j in range(aircraft_landing.n_aircraft)]
+                     for i in range(aircraft_landing.n_aircraft)]
+
+    big_number_variable = 1000
 
     # Time Window Constraints
-    for aircraft_index, landing_time_window in enumerate(aircraft_landing.landing_times):
-        model += landing_time_window.earliest <= landing_times_decision[aircraft_index]
-        model += landing_times_decision[aircraft_index] <= landing_time_window.latest
+    for i, landing_time_window in enumerate(aircraft_landing.landing_times):
+        model += landing_time_window.earliest <= landing_times_decision[i]
+        model += landing_times_decision[i] <= landing_time_window.latest
 
-    # TODO add other constraints
+    # Each aircraft is assigned to exactly one runway
+    for i in range(aircraft_landing.n_aircraft):
+        model += xsum(runway_assignment[i][r] for r in range(aircraft_landing.n_runways)) == 1
+
+    # Separation Constraints: If aircraft i and j land on the same runway, enforce separation
+    for i in range(aircraft_landing.n_aircraft):
+        for j in range(i + 1, aircraft_landing.n_aircraft):
+            for r in range(aircraft_landing.n_runways):
+                if aircraft_landing.separation_times[i][j] > 0:
+                    model += landing_times_decision[i] + aircraft_landing.separation_times[i][j] <= landing_times_decision[j] + \
+                             (1 - landing_order[i][j]) * big_number_variable
+                    model += landing_times_decision[j] + aircraft_landing.separation_times[j][i] <= landing_times_decision[i] + \
+                             landing_order[i][j] * big_number_variable
+                    model += runway_assignment[i][r] + runway_assignment[j][r] <= 1 + landing_order[i][j]
 
     status = model.optimize(max_seconds=2)
     print("Status: ", OptimizationStatus(status))
     if status in (OptimizationStatus.OPTIMAL, OptimizationStatus.FEASIBLE):
         for i in range(aircraft_landing.n_aircraft):
-            print(f"Aircraft {i + 1} lands at time {landing_times_decision[i].x:.2f}")
-
+            assigned_runway = next(r for r in range(aircraft_landing.n_runways) if runway_assignment[i][r].x >= 1)
+            print(f"Aircraft {i + 1} lands at time {landing_times_decision[i].x:.2f} on runway {assigned_runway + 1}")
 
 
 n = 5
