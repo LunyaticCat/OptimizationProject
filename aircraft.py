@@ -46,13 +46,13 @@ def solver(aircraft_landing: AircraftLanding):
     model = Model("Aircraft Landing")
 
     # Decision variables
-    x = [model.add_var(var_type=CONTINUOUS, name=f"x_{i}")
-         for i in range(aircraft_landing.n_aircraft)]
+    landing_times_decision = [model.add_var(var_type=CONTINUOUS, name=f"landing_time_{i}")
+                    for i in range(aircraft_landing.n_aircraft)]
 
     # Time Window Constraints
-    for i, lt in enumerate(aircraft_landing.landing_times):
-        model += lt.earliest <= x[i]
-        model += x[i] <= lt.latest
+    for aircraft_index, landing_time_window in enumerate(aircraft_landing.landing_times):
+        model += landing_time_window.earliest <= landing_times_decision[aircraft_index]
+        model += landing_times_decision[aircraft_index] <= landing_time_window.latest
 
     # TODO add other constraints
 
@@ -60,7 +60,7 @@ def solver(aircraft_landing: AircraftLanding):
     print("Status: ", OptimizationStatus(status))
     if status in (OptimizationStatus.OPTIMAL, OptimizationStatus.FEASIBLE):
         for i in range(aircraft_landing.n_aircraft):
-            print(f"Aircraft {i + 1} lands at time {x[i].x:.2f}")
+            print(f"Aircraft {i + 1} lands at time {landing_times_decision[i].x:.2f}")
 
 
 
