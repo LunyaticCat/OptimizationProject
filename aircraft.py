@@ -41,11 +41,11 @@ class AircraftLanding:
         self.landing_times = landing_times
         self.separation_times = separation_times
 
-
-from mip import Constr
-
-def solver(aircraft_landing: AircraftLanding, additional_constraints: List[Model] = None):
-    model = Model("Aircraft Landing")
+def solver(aircraft_landing: AircraftLanding, additional_constraints: Model = None):
+    if additional_constraints is None:
+        model = Model("Aircraft Landing")
+    else:
+        model = additional_constraints
 
     # Decision variables
     landing_times_decision = [model.add_var(var_type=CONTINUOUS, name=f"landing_time_{i}")
@@ -81,10 +81,6 @@ def solver(aircraft_landing: AircraftLanding, additional_constraints: List[Model
                              landing_order[i][j] * big_number_variable
                     model += runway_assignment[i][r] + runway_assignment[j][r] <= 1 + landing_order[i][j]
 
-    if additional_constraints is not None:
-        for constraint in additional_constraints:
-            model += constraint
-
     status = model.optimize(max_seconds=2)
     print("Status: ", OptimizationStatus(status))
     if status in (OptimizationStatus.OPTIMAL, OptimizationStatus.FEASIBLE):
@@ -92,6 +88,51 @@ def solver(aircraft_landing: AircraftLanding, additional_constraints: List[Model
             assigned_runway = next(r for r in range(aircraft_landing.n_runways) if runway_assignment[i][r].x >= 1)
             print(f"Aircraft {i + 1} lands at time {landing_times_decision[i].x:.2f} on runway {assigned_runway + 1}")
 
+def problem_1(aircraft_landing: AircraftLanding):
+    model = Model("Minimizing Weighted Delay with Target Landing Times")
+
+    # Decision variables
+    landing_times_decision = [model.add_var(var_type=CONTINUOUS, name=f"landing_time_{i}")
+                               for i in range(aircraft_landing.n_aircraft)]
+    early_penalty = [model.add_var(var_type=CONTINUOUS, name=f"early_penalty_{i}")
+                     for i in range(aircraft_landing.n_aircraft)]
+    late_penalty = [model.add_var(var_type=CONTINUOUS, name=f"late_penalty_{i}")
+                    for i in range(aircraft_landing.n_aircraft)]
+
+    target_times = [(lt.earliest + lt.latest) // 2 for lt in aircraft_landing.landing_times]
+    early_landing_weight = [1] * aircraft_landing.n_aircraft  # Weight for early landing
+    late_landing_weight = [1] * aircraft_landing.n_aircraft   # Weight for late landing
+
+    # Penalty Constraints
+    for i in range(aircraft_landing.n_aircraft):
+        model += early_penalty[i] >= target_times[i] - landing_times_decision[i]
+        model += late_penalty[i] >= landing_times_decision[i] - target_times[i]
+        model += early_penalty[i] >= 0
+        model += late_penalty[i] >= 0
+
+    model.objective = minimize(xsum(early_landing_weight[i] * early_penalty[i] + late_landing_weight[i] * late_penalty[i]
+                                    for i in range(aircraft_landing.n_aircraft)))
+
+    solver(aircraft_landing, model)
+
+def problem_2(aircraft_landing: AircraftLanding):
+    model = Model("Minimizing Makespan")
+
+    # Decision variables
+
+
+    ## TODO Solve problem 2
+
+    solver(aircraft_landing, model)
+
+def problem_3(aircraft_landing: AircraftLanding):
+    model = Model("Minimizing Total Lateness with Runway Assignment")
+
+    # Decision variables
+
+    ## TODO Solve problem 3
+
+    solver(aircraft_landing, model)
 
 n = 5
 m = 2
@@ -107,4 +148,4 @@ s = [
 ]
 
 aircraft_landing = AircraftLanding(n_aircraft=n, n_runways=m, landing_times=landing_times, separation_times=s)
-solver(aircraft_landing)
+problem_1(aircraft_landing)
