@@ -1,21 +1,39 @@
 from typing import List
-from mip import Model, xsum, BINARY, CONTINUOUS, minimize, OptimizationStatus
-
 
 class LandingTime:
     """
     Represents the landing time window for an aircraft.
 
     Attributes:
+        appearance_time (int)
         earliest (int): Earliest allowable landing time.
+        target (int): Target time for the aircraft.
         latest (int): Latest allowable landing time.
+        penalty_cost_before_target (int): penalty cost per unit of time for landing before target.
+        penalty_cost_after_target (int): penalty cost per unit of time for landing after target.
     """
 
-    def __init__(self, earliest: int, latest: int):
-        if earliest > latest:
-            raise ValueError("Earliest landing time cannot be later than latest")
+    def __init__(self, appearance_time: int, earliest: int, target:int, latest: int, penalty_cost_before_target: int = 0, penalty_cost_after_target: int = 0):
+        if not earliest <= target <= latest:
+            raise ValueError(f"Earliest landing time cannot be later than latest, got {earliest} {target} {latest}")
+        self.appearance_time = appearance_time
         self.earliest = earliest
+        self.target = target
         self.latest = latest
+        self.penalty_cost_before_target = penalty_cost_before_target
+        self.penalty_cost_after_target = penalty_cost_after_target
+
+    def __str__(self):
+        return (f"LandingTime(appearance_time={self.appearance_time}, "
+                f"earliest={self.earliest}, target={self.target}, latest={self.latest}, "
+                f"penalty_cost_before_target={self.penalty_cost_before_target}, "
+                f"penalty_cost_after_target={self.penalty_cost_after_target})")
+
+    def __repr__(self):
+        return (f"LandingTime(appearance_time={self.appearance_time!r}, "
+                f"earliest={self.earliest!r}, target={self.target!r}, latest={self.latest!r}, "
+                f"penalty_cost_before_target={self.penalty_cost_before_target!r}, "
+                f"penalty_cost_after_target={self.penalty_cost_after_target!r})")
 
 
 class AircraftLanding:
@@ -25,6 +43,7 @@ class AircraftLanding:
     Args:
         n_aircraft (int): Number of aircraft.
         n_runways (int): Number of runways.
+        freeze_time (int)
         landing_times (List[LandingTime]): A list of LandingTime objects, one per aircraft.
         separation_times (List[List[int]]): A matrix representing separation times between aircraft.
     """
@@ -32,120 +51,24 @@ class AircraftLanding:
     def __init__(self,
                  n_aircraft: int,
                  n_runways: int,
+                 freeze_time: int,
                  landing_times: List[LandingTime],
                  separation_times: List[List[int]]):
         if n_aircraft != len(landing_times):
-            raise ValueError("There must be a landing time for each aircraft.")
+            raise ValueError(f"There must be a landing time for each aircraft. got {len(landing_times)} instead of {n_aircraft}")
         self.n_aircraft = n_aircraft
         self.n_runways = n_runways
+        self.freeze_time = freeze_time
         self.landing_times = landing_times
         self.separation_times = separation_times
 
-def solver(aircraft_landing: AircraftLanding, additional_constraints: Model = None):
-    if additional_constraints is None:
-        model = Model("Aircraft Landing")
-    else:
-        model = additional_constraints
+    def __str__(self):
+        return (f"AircraftLanding(n_aircraft={self.n_aircraft}, n_runways={self.n_runways}, "
+                f"freeze_time={self.freeze_time}, "
+                f"landing_times={self.landing_times}, "
+                f"separation_times={self.separation_times}")
 
-    # Decision variables
-    landing_times_decision = [model.add_var(var_type=CONTINUOUS, name=f"landing_time_{i}")
-                               for i in range(aircraft_landing.n_aircraft)]
-
-    runway_assignment = [[model.add_var(var_type=BINARY, name=f"runway_{i}_{r}")
-                          for r in range(aircraft_landing.n_runways)]
-                         for i in range(aircraft_landing.n_aircraft)]
-
-    landing_order = [[model.add_var(var_type=BINARY, name=f"order_{i}_{j}")
-                      for j in range(aircraft_landing.n_aircraft)]
-                     for i in range(aircraft_landing.n_aircraft)]
-
-    big_number_variable = 1000
-
-    # Time Window Constraints
-    for i, landing_time_window in enumerate(aircraft_landing.landing_times):
-        model += landing_time_window.earliest <= landing_times_decision[i]
-        model += landing_times_decision[i] <= landing_time_window.latest
-
-    # Each aircraft is assigned to exactly one runway
-    for i in range(aircraft_landing.n_aircraft):
-        model += xsum(runway_assignment[i][r] for r in range(aircraft_landing.n_runways)) == 1
-
-    # Separation Constraints: If aircraft i and j land on the same runway, enforce separation
-    for i in range(aircraft_landing.n_aircraft):
-        for j in range(i + 1, aircraft_landing.n_aircraft):
-            for r in range(aircraft_landing.n_runways):
-                if aircraft_landing.separation_times[i][j] > 0:
-                    model += landing_times_decision[i] + aircraft_landing.separation_times[i][j] <= landing_times_decision[j] + \
-                             (1 - landing_order[i][j]) * big_number_variable
-                    model += landing_times_decision[j] + aircraft_landing.separation_times[j][i] <= landing_times_decision[i] + \
-                             landing_order[i][j] * big_number_variable
-                    model += runway_assignment[i][r] + runway_assignment[j][r] <= 1 + landing_order[i][j]
-
-    status = model.optimize(max_seconds=2)
-    print("Status: ", OptimizationStatus(status))
-    if status in (OptimizationStatus.OPTIMAL, OptimizationStatus.FEASIBLE):
-        for i in range(aircraft_landing.n_aircraft):
-            assigned_runway = next(r for r in range(aircraft_landing.n_runways) if runway_assignment[i][r].x >= 1)
-            print(f"Aircraft {i + 1} lands at time {landing_times_decision[i].x:.2f} on runway {assigned_runway + 1}")
-
-def problem_1(aircraft_landing: AircraftLanding):
-    model = Model("Minimizing Weighted Delay with Target Landing Times")
-
-    # Decision variables
-    landing_times_decision = [model.add_var(var_type=CONTINUOUS, name=f"landing_time_{i}")
-                               for i in range(aircraft_landing.n_aircraft)]
-    early_penalty = [model.add_var(var_type=CONTINUOUS, name=f"early_penalty_{i}")
-                     for i in range(aircraft_landing.n_aircraft)]
-    late_penalty = [model.add_var(var_type=CONTINUOUS, name=f"late_penalty_{i}")
-                    for i in range(aircraft_landing.n_aircraft)]
-
-    target_times = [(lt.earliest + lt.latest) // 2 for lt in aircraft_landing.landing_times]
-    early_landing_weight = [1] * aircraft_landing.n_aircraft  # Weight for early landing
-    late_landing_weight = [1] * aircraft_landing.n_aircraft   # Weight for late landing
-
-    # Penalty Constraints
-    for i in range(aircraft_landing.n_aircraft):
-        model += early_penalty[i] >= target_times[i] - landing_times_decision[i]
-        model += late_penalty[i] >= landing_times_decision[i] - target_times[i]
-        model += early_penalty[i] >= 0
-        model += late_penalty[i] >= 0
-
-    model.objective = minimize(xsum(early_landing_weight[i] * early_penalty[i] + late_landing_weight[i] * late_penalty[i]
-                                    for i in range(aircraft_landing.n_aircraft)))
-
-    solver(aircraft_landing, model)
-
-def problem_2(aircraft_landing: AircraftLanding):
-    model = Model("Minimizing Makespan")
-
-    # Decision variables
-
-
-    ## TODO Solve problem 2
-
-    solver(aircraft_landing, model)
-
-def problem_3(aircraft_landing: AircraftLanding):
-    model = Model("Minimizing Total Lateness with Runway Assignment")
-
-    # Decision variables
-
-    ## TODO Solve problem 3
-
-    solver(aircraft_landing, model)
-
-n = 5
-m = 2
-landing_times = [LandingTime(earliest, latest)
-                 for earliest, latest in zip([10, 15, 20, 30, 35],
-                                             [30, 40, 50, 60, 70])]
-s = [
-    [0, 3, 4, 5, 6],
-    [3, 0, 2, 4, 5],
-    [4, 2, 0, 3, 4],
-    [5, 4, 3, 0, 2],
-    [6, 5, 4, 2, 0]
-]
-
-aircraft_landing = AircraftLanding(n_aircraft=n, n_runways=m, landing_times=landing_times, separation_times=s)
-problem_1(aircraft_landing)
+    def __repr__(self):
+        return (f"AircraftLanding(n_aircraft={self.n_aircraft!r}, n_runways={self.n_runways!r}, "
+                f"freeze_time={self.freeze_time!r}, landing_times={self.landing_times!r}, "
+                f"separation_times={self.separation_times!r})")
