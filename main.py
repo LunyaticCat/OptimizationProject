@@ -1,19 +1,18 @@
 from mip import Model, xsum, BINARY, CONTINUOUS, minimize, OptimizationStatus
-from aircraft import AircraftLanding, LandingTime
+from aircraft import AircraftLanding
 from data_fetcher import fetch_aircraft_data
 
-
-#TODO fix the issue about the separation happening even for multiple runways with this solution
-def solver(aircraft_landing: AircraftLanding, additional_constraints: Model = None):
-    if additional_constraints is None:
-        model = Model("Aircraft Landing")
-    else:
-        model = additional_constraints
-
-    # Decision variables
+def time_window_constraint(model: Model, aircraft_landing: AircraftLanding):
     landing_times_decision = [model.add_var(var_type=CONTINUOUS, name=f"landing_time_{i}")
                               for i in range(aircraft_landing.n_aircraft)]
 
+    for i, landing_time_window in enumerate(aircraft_landing.landing_times):
+        model += landing_time_window.earliest <= landing_times_decision[i]
+        model += landing_times_decision[i] <= landing_time_window.latest
+
+    return model
+
+def separation_constraint(model: Model, aircraft_landing: AircraftLanding):
     runway_assignment = [[model.add_var(var_type=BINARY, name=f"runway_{i}_{r}")
                           for r in range(aircraft_landing.n_runways)]
                          for i in range(aircraft_landing.n_aircraft)]
@@ -24,35 +23,12 @@ def solver(aircraft_landing: AircraftLanding, additional_constraints: Model = No
 
     big_m = 1000
 
-    # Time Window Constraints
-    for i, landing_time_window in enumerate(aircraft_landing.landing_times):
-        model += landing_time_window.earliest <= landing_times_decision[i]
-        model += landing_times_decision[i] <= landing_time_window.latest
-
     # Each aircraft is assigned to exactly one runway
     for i in range(aircraft_landing.n_aircraft):
         model += xsum(runway_assignment[i][r] for r in range(aircraft_landing.n_runways)) == 1
 
-    # Separation Constraints: If aircraft i and j land on the same runway, enforce separation
-    for i in range(aircraft_landing.n_aircraft):
-        for j in range(i + 1, aircraft_landing.n_aircraft):
-            for r in range(aircraft_landing.n_runways):
-                if aircraft_landing.separation_times[i][j] > 0:
-                    model += landing_times_decision[i] + aircraft_landing.separation_times[i][j] <= \
-                             landing_times_decision[j] + \
-                             (1 - landing_order[i][j]) * big_m
-                    model += landing_times_decision[j] + aircraft_landing.separation_times[j][i] <= \
-                             landing_times_decision[i] + \
-                             landing_order[i][j] * big_m
-                    model += runway_assignment[i][r] + runway_assignment[j][r] <= 1 + landing_order[i][j]
-
-    status = model.optimize(max_seconds=2)
-    print("Status: ", OptimizationStatus(status))
-    if status in (OptimizationStatus.OPTIMAL, OptimizationStatus.FEASIBLE):
-        for i in range(aircraft_landing.n_aircraft):
-            assigned_runway = next(r for r in range(aircraft_landing.n_runways) if runway_assignment[i][r].x >= 1)
-            print(f"Aircraft {i + 1} lands at time {landing_times_decision[i].x:.2f} on runway {assigned_runway + 1}")
-
+    ## TODO Separation constraint
+    return model
 
 def problem_1(aircraft_landing: AircraftLanding):
     model = Model("Minimize Weighted Deviation from Target Landing Times")
@@ -75,13 +51,16 @@ def problem_1(aircraft_landing: AircraftLanding):
         model += early_penalty[landing_time_index] >= 0
         model += late_penalty[landing_time_index] >= 0
 
+    model = separation_constraint(model, aircraft_landing)
+    model = time_window_constraint(model, aircraft_landing)
+
     model.objective = minimize(xsum(
         lt.penalty_cost_before_target * early_penalty[i] +
         lt.penalty_cost_after_target * late_penalty[i]
         for i, lt in enumerate(aircraft_landing.landing_times)
     ))
 
-    solver(aircraft_landing, model)
+    return model.optimize(max_seconds=2)
 
 
 def problem_2(aircraft_landing: AircraftLanding):
@@ -100,21 +79,22 @@ def problem_2(aircraft_landing: AircraftLanding):
 
         model += makespan >= landing_times[i]
 
+    model = separation_constraint(model, aircraft_landing)
+    model = time_window_constraint(model, aircraft_landing)
+
     model.objective = minimize(makespan)
 
-    solver(aircraft_landing, model)
+    return model.optimize(max_seconds=2)
 
 
 def problem_3(aircraft_landing: AircraftLanding):
     model = Model("Minimizing Total Lateness with Runway Assignment")
 
-    # Decision variables
-
     ## TODO Solve problem 3
 
-    solver(aircraft_landing, model)
+    return model.optimize(max_seconds=2)
 
 
 data = fetch_aircraft_data()[0]
 data.n_runways = 1
-problem_1(data)
+print(OptimizationStatus(problem_2(data)))
