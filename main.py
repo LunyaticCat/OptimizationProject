@@ -1,6 +1,7 @@
 from mip import Model, xsum, BINARY, CONTINUOUS, minimize, OptimizationStatus
 from aircraft import AircraftLanding
 from data_fetcher import fetch_aircraft_data
+from print_info import print_solution_info
 
 def time_window_constraint(model: Model, aircraft_landing: AircraftLanding, model_variables):
     for i, landing_time_window in enumerate(aircraft_landing.landing_times):
@@ -123,4 +124,6 @@ def problem_3(aircraft_landing: AircraftLanding):
 
 data = fetch_aircraft_data()[0]
 data.n_runways = 1
-problem_1(data)
+
+status, model_vars = problem_1(data)
+print_solution_info(status, model_vars)
