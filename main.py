@@ -2,6 +2,7 @@ from mip import Model, xsum, BINARY, CONTINUOUS, minimize, OptimizationStatus
 from aircraft import AircraftLanding
 from data_fetcher import fetch_aircraft_data
 from print_info import print_solution_info
+import random
 
 def time_window_constraint(model: Model, aircraft_landing: AircraftLanding, model_variables):
     for i, landing_time_window in enumerate(aircraft_landing.landing_times):
@@ -117,13 +118,50 @@ def problem_2(aircraft_landing: AircraftLanding):
 def problem_3(aircraft_landing: AircraftLanding):
     model = Model("Minimizing Total Lateness with Runway Assignment")
 
-    ## TODO Solve problem 3
+    landing_times_decision = [model.add_var(var_type=CONTINUOUS, name=f"landing_time_{i}")
+                              for i in range(aircraft_landing.n_aircraft)]
 
-    return model.optimize(max_seconds=2)
+    lateness = [model.add_var(var_type=CONTINUOUS, name=f"lateness_{i}")
+                for i in range(aircraft_landing.n_aircraft)]
+
+    model_variables = {"landing_times_decision": landing_times_decision}
+
+    model, runway_assignment, landing_order = separation_constraint(
+        model, aircraft_landing, model_variables
+    )
+
+    model = time_window_constraint(model, aircraft_landing, model_variables)
+
+    n_aircraft = aircraft_landing.n_aircraft
+    n_runways = aircraft_landing.n_runways
+    t_ir = aircraft_landing.t_ir
+    A_i = [lt.target for lt in aircraft_landing.landing_times]
+
+    for i in range(n_aircraft):
+        model += lateness[i] >= xsum(
+            landing_times_decision[i] + t_ir[i][r] * runway_assignment[i][r]
+            for r in range(n_runways)
+        ) - A_i[i]
+
+    model.objective = minimize(xsum(lateness))
+
+    status = model.optimize(max_seconds=2)
+
+    model_variables = {"landing_times_decision": landing_times_decision, "lateness": lateness,
+                       "runway_assignment": runway_assignment, "landing_order": landing_order}
+    return status, model_variables
 
 
 data = fetch_aircraft_data()[0]
-data.n_runways = 1
 
-status, model_vars = problem_1(data)
+data.n_runways = 1
+data.t_ir = []
+for landing_time in data.landing_times:
+    t_i = landing_time.target
+    e_i = landing_time.earliest
+    max_travel = max(1, t_i - e_i)
+    t_ir_i = [random.randint(1, max_travel) for _ in range(data.n_runways)]
+    data.t_ir.append(t_ir_i)
+
+status, model_vars = problem_3(data)
 print_solution_info(status, model_vars)
