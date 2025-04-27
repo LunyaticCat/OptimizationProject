@@ -1,3 +1,4 @@
+import random
 from typing import List
 
 class LandingTime:
@@ -43,9 +44,10 @@ class AircraftLanding:
     Args:
         n_aircraft (int): Number of aircraft.
         n_runways (int): Number of runways.
-        freeze_time (int)
+        freeze_time (int): Time period during which no changes can be made.
         landing_times (List[LandingTime]): A list of LandingTime objects, one per aircraft.
         separation_times (List[List[int]]): A matrix representing separation times between aircraft.
+        t_ir (List[List[int]]): A matrix where t_ir[i][r] is the time for aircraft i to reach parking after landing on runway r.
     """
 
     def __init__(self,
@@ -55,20 +57,33 @@ class AircraftLanding:
                  landing_times: List[LandingTime],
                  separation_times: List[List[int]]):
         if n_aircraft != len(landing_times):
-            raise ValueError(f"There must be a landing time for each aircraft. got {len(landing_times)} instead of {n_aircraft}")
+            raise ValueError(
+                f"There must be a landing time for each aircraft. Got {len(landing_times)} instead of {n_aircraft}")
+
         self.n_aircraft = n_aircraft
         self.n_runways = n_runways
         self.freeze_time = freeze_time
         self.landing_times = landing_times
         self.separation_times = separation_times
+        self.t_ir = []
+
+        for landing_time in self.landing_times:
+            t_i = landing_time.target
+            e_i = landing_time.earliest
+            max_travel = max(1, t_i - e_i)
+            t_ir_i = [random.randint(1, max_travel) for _ in range(self.n_runways)]
+            self.t_ir.append(t_ir_i)
 
     def __str__(self):
         return (f"AircraftLanding(n_aircraft={self.n_aircraft}, n_runways={self.n_runways}, "
                 f"freeze_time={self.freeze_time}, "
                 f"landing_times={self.landing_times}, "
-                f"separation_times={self.separation_times}")
+                f"separation_times={self.separation_times}, "
+                f"t_ir={self.t_ir})")
 
     def __repr__(self):
         return (f"AircraftLanding(n_aircraft={self.n_aircraft!r}, n_runways={self.n_runways!r}, "
-                f"freeze_time={self.freeze_time!r}, landing_times={self.landing_times!r}, "
-                f"separation_times={self.separation_times!r})")
+                f"freeze_time={self.freeze_time!r}, "
+                f"landing_times={self.landing_times!r}, "
+                f"separation_times={self.separation_times!r}, "
+                f"t_ir={self.t_ir!r})")

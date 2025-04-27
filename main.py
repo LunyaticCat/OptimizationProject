@@ -1,8 +1,7 @@
-from mip import Model, xsum, BINARY, CONTINUOUS, minimize, OptimizationStatus
+from mip import Model, xsum, BINARY, CONTINUOUS, minimize
 from aircraft import AircraftLanding
 from data_fetcher import fetch_aircraft_data
 from print_info import print_solution_info
-import random
 
 def time_window_constraint(model: Model, aircraft_landing: AircraftLanding, model_variables):
     for i, landing_time_window in enumerate(aircraft_landing.landing_times):
@@ -155,13 +154,6 @@ def problem_3(aircraft_landing: AircraftLanding):
 data = fetch_aircraft_data()[0]
 
 data.n_runways = 1
-data.t_ir = []
-for landing_time in data.landing_times:
-    t_i = landing_time.target
-    e_i = landing_time.earliest
-    max_travel = max(1, t_i - e_i)
-    t_ir_i = [random.randint(1, max_travel) for _ in range(data.n_runways)]
-    data.t_ir.append(t_ir_i)
 
-status, model_vars = problem_3(data)
-print_solution_info(status, model_vars)
+data_status, model_vars = problem_3(data)
+print_solution_info(data_status, model_vars)
