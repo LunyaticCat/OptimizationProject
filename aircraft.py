@@ -47,7 +47,6 @@ class AircraftLanding:
         freeze_time (int): Time period during which no changes can be made.
         landing_times (List[LandingTime]): A list of LandingTime objects, one per aircraft.
         separation_times (List[List[int]]): A matrix representing separation times between aircraft.
-        t_ir (List[List[int]]): A matrix where t_ir[i][r] is the time for aircraft i to reach parking after landing on runway r.
     """
 
     def __init__(self,
@@ -65,14 +64,20 @@ class AircraftLanding:
         self.freeze_time = freeze_time
         self.landing_times = landing_times
         self.separation_times = separation_times
-        self.t_ir = []
 
+    """
+         Dynamic property of a matrix where t_ir[i][r] is the time for aircraft i to reach parking after landing on runway r.
+    """
+    @property
+    def t_ir(self):
+        t_ir_matrix = []
         for landing_time in self.landing_times:
             t_i = landing_time.target
             e_i = landing_time.earliest
             max_travel = max(1, t_i - e_i)
             t_ir_i = [random.randint(1, max_travel) for _ in range(self.n_runways)]
-            self.t_ir.append(t_ir_i)
+            t_ir_matrix.append(t_ir_i)
+        return t_ir_matrix
 
     def __str__(self):
         return (f"AircraftLanding(n_aircraft={self.n_aircraft}, n_runways={self.n_runways}, "
