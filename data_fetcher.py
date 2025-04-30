@@ -5,7 +5,7 @@ from aircraft import LandingTime, AircraftLanding
 def order_data(flat_data: list):
     pointer = 0
 
-    n_aircraft = flat_data[pointer]
+    n_aircraft = int(flat_data[pointer])
     pointer += 1
     freeze_time = flat_data[pointer]
     pointer += 1
@@ -34,11 +34,12 @@ def order_data(flat_data: list):
 def flatten_data(nested_data):
     return [item for sublist in nested_data for item in sublist]
 
+
 def fetch_data(url: str):
     response = requests.get(url)
     response.raise_for_status()
 
-    data = [[int(float(x.strip())) for x in line.split()] for line in response.text.splitlines()] #TODO currently transform everything to int, might want to change that
+    data = [[float(x.strip()) for x in line.split()] for line in response.text.splitlines()]
 
     flat_data = flatten_data(data)
 

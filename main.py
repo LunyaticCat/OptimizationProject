@@ -152,9 +152,15 @@ def problem_3(aircraft_landing: AircraftLanding):
     return status, model_variables
 
 
-data = fetch_aircraft_data()[0]
+data = fetch_aircraft_data()
 
-data.n_runways = 2
+def export_all_problem_results():
+    for i in range(12):
+        data_status, model_vars = problem_1(data[i])
+        export_solution_info_json(data[i], data_status, model_vars, f"result_problem_1_{i + 1}")
+        data_status, model_vars = problem_2(data[i])
+        export_solution_info_json(data[i], data_status, model_vars, f"result_problem_2_{i + 1}")
+        data_status, model_vars = problem_3(data[i])
+        export_solution_info_json(data[i], data_status, model_vars, f"result_problem_3_{i + 1}")
 
-data_status, model_vars = problem_3(data)
-export_solution_info_json(data, data_status, model_vars, "result_problem_3")
+export_all_problem_results()
