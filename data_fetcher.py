@@ -3,6 +3,16 @@ import requests
 from aircraft import LandingTime, AircraftLanding
 
 def order_data(flat_data: list):
+    """
+    Orders and structures flat aircraft landing data into an AircraftLanding object.
+
+    Args:
+        flat_data (list): A flattened list of input data, parsed from text file.
+
+    Returns:
+        AircraftLanding: An instance of the AircraftLanding class containing parsed and organized data.
+    """
+
     pointer = 0
 
     n_aircraft = int(flat_data[pointer])
@@ -32,10 +42,30 @@ def order_data(flat_data: list):
     return aircraft_landing
 
 def flatten_data(nested_data):
+    """
+    Flattens a nested list of data into a single list.
+
+    Args:
+        nested_data (list of lists): A list of lists to be flattened.
+
+    Returns:
+        list: A single flattened list containing all elements from the nested list.
+    """
+
     return [item for sublist in nested_data for item in sublist]
 
 
 def fetch_data(url: str):
+    """
+    Fetches and flattens aircraft landing problem data from a remote URL.
+
+    Args:
+        url (str): The URL pointing to the raw aircraft landing data.
+
+    Returns:
+        list: A flattened list of float values extracted from the text data at the URL.
+    """
+
     response = requests.get(url)
     response.raise_for_status()
 
@@ -46,6 +76,13 @@ def fetch_data(url: str):
     return flat_data
 
 def fetch_aircraft_data():
+    """
+    Fetches and structures all 12 standard aircraft landing problem datasets.
+
+    Returns:
+        list: A list of AircraftLanding objects, each representing one dataset.
+    """
+
     data = []
     for i in range(12):
         data.append(order_data(fetch_data(f"https://people.brunel.ac.uk/~mastjjb/jeb/orlib/files/airland{i+1}.txt")))
