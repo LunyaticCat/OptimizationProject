@@ -37,6 +37,10 @@ class LandingTime:
                 f"penalty_cost_after_target={self.penalty_cost_after_target!r})")
 
 
+import random
+from typing import List
+from aircraft import LandingTime  # assuming this is defined elsewhere
+
 class AircraftLanding:
     """
     Represents an aircraft landing problem.
@@ -47,6 +51,7 @@ class AircraftLanding:
         freeze_time (int): Time period during which no changes can be made.
         landing_times (List[LandingTime]): A list of LandingTime objects, one per aircraft.
         separation_times (List[List[int]]): A matrix representing separation times between aircraft.
+        seed (int, optional): A random seed to ensure reproducibility of generated parameters.
     """
 
     def __init__(self,
@@ -54,7 +59,8 @@ class AircraftLanding:
                  n_runways: int,
                  freeze_time: int,
                  landing_times: List[LandingTime],
-                 separation_times: List[List[int]]):
+                 separation_times: List[List[int]],
+                 seed: int = None):
         if n_aircraft != len(landing_times):
             raise ValueError(
                 f"There must be a landing time for each aircraft. Got {len(landing_times)} instead of {n_aircraft}")
@@ -64,18 +70,22 @@ class AircraftLanding:
         self.freeze_time = freeze_time
         self.landing_times = landing_times
         self.separation_times = separation_times
+        self.seed = seed
 
-    """
-         Dynamic property of a matrix where t_ir[i][r] is the time for aircraft i to reach parking after landing on runway r.
-    """
     @property
     def t_ir(self):
+        """
+        Dynamic property of a matrix where t_ir[i][r] is the time for aircraft i
+        to reach parking after landing on runway r. Values are generated
+        deterministically using the provided seed.
+        """
+        rng = random.Random(self.seed)
         t_ir_matrix = []
         for landing_time in self.landing_times:
             t_i = landing_time.target
             e_i = landing_time.earliest
             max_travel = max(1, t_i - e_i)
-            t_ir_i = [random.randint(1, max_travel) for _ in range(self.n_runways)]
+            t_ir_i = [rng.randint(1, max_travel) for _ in range(self.n_runways)]
             t_ir_matrix.append(t_ir_i)
         return t_ir_matrix
 
