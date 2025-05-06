@@ -36,11 +36,6 @@ class LandingTime:
                 f"penalty_cost_before_target={self.penalty_cost_before_target!r}, "
                 f"penalty_cost_after_target={self.penalty_cost_after_target!r})")
 
-
-import random
-from typing import List
-from aircraft import LandingTime  # assuming this is defined elsewhere
-
 class AircraftLanding:
     """
     Represents an aircraft landing problem.
