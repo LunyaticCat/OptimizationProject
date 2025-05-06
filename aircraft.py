@@ -71,23 +71,26 @@ class AircraftLanding:
         self.landing_times = landing_times
         self.separation_times = separation_times
         self.seed = seed
+        self._t_ir = None
 
     @property
     def t_ir(self):
         """
-        Dynamic property of a matrix where t_ir[i][r] is the time for aircraft i
-        to reach parking after landing on runway r. Values are generated
-        deterministically using the provided seed.
+        Cached property: t_ir[i][r] is the time for aircraft i
+        to reach parking after landing on runway r.
+        Generated deterministically from the seed only once.
         """
-        rng = random.Random(self.seed)
-        t_ir_matrix = []
-        for landing_time in self.landing_times:
-            t_i = landing_time.target
-            e_i = landing_time.earliest
-            max_travel = max(1, t_i - e_i)
-            t_ir_i = [rng.randint(1, max_travel) for _ in range(self.n_runways)]
-            t_ir_matrix.append(t_ir_i)
-        return t_ir_matrix
+        if self._t_ir is None or self.n_runways != len(self._t_ir[0]):
+            rng = random.Random(self.seed)
+            t_ir_matrix = []
+            for landing_time in self.landing_times:
+                t_i = landing_time.target
+                e_i = landing_time.earliest
+                max_travel = max(1, t_i - e_i)
+                t_ir_i = [rng.randint(1, max_travel) for _ in range(self.n_runways)]
+                t_ir_matrix.append(t_ir_i)
+            self._t_ir = t_ir_matrix
+        return self._t_ir
 
     def __str__(self):
         return (f"AircraftLanding(n_aircraft={self.n_aircraft}, n_runways={self.n_runways}, "

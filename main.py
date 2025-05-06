@@ -1,10 +1,22 @@
+import argparse
+
 from mip import Model, xsum, BINARY, CONTINUOUS, minimize
 from aircraft import AircraftLanding
 from data_fetcher import fetch_aircraft_data
 from export_result import export_solution_info_json
-from print_result import print_solution_info
 
 def time_window_constraint(model: Model, aircraft_landing: AircraftLanding, model_variables):
+    """
+    Adds time window constraints for each aircraft's landing.
+
+    Args:
+        model (Model): The optimization model.
+        aircraft_landing (AircraftLanding): The problem instance.
+        model_variables (dict): Dictionary containing decision variables.
+
+    Returns:
+        Model: The updated model with time window constraints added.
+    """
     for i, landing_time_window in enumerate(aircraft_landing.landing_times):
         model += landing_time_window.earliest <= model_variables["landing_times_decision"][i]
         model += model_variables["landing_times_decision"][i] <= landing_time_window.latest
@@ -12,6 +24,18 @@ def time_window_constraint(model: Model, aircraft_landing: AircraftLanding, mode
     return model
 
 def separation_constraint(model: Model, aircraft_landing: AircraftLanding, model_variables):
+    """
+    Adds runway separation and ordering constraints between aircraft.
+
+    Args:
+        model (Model): The optimization model.
+        aircraft_landing (AircraftLanding): The problem instance.
+        model_variables (dict): Dictionary containing decision variables.
+
+    Returns:
+        Tuple[Model, List[List[Var]], List[List[Var]]]: The updated model,
+            runway assignment variables, and landing order variables.
+    """
     runway_assignment = [[model.add_var(var_type=BINARY, name=f"runway_{i}_{r}")
                           for r in range(aircraft_landing.n_runways)]
                          for i in range(aircraft_landing.n_aircraft)]
@@ -49,6 +73,15 @@ def separation_constraint(model: Model, aircraft_landing: AircraftLanding, model
     return model, runway_assignment, landing_order
 
 def problem_1(aircraft_landing: AircraftLanding):
+    """
+    Solves Problem 1: Minimize weighted deviation from target landing times.
+
+    Args:
+        aircraft_landing (AircraftLanding): The problem instance.
+
+    Returns:
+        Tuple[str, dict]: The solver status and model variables.
+    """
     model = Model("Minimize Weighted Deviation from Target Landing Times")
 
     landing_times_decision = [model.add_var(var_type=CONTINUOUS, name=f"landing_time_{i}")
@@ -86,8 +119,16 @@ def problem_1(aircraft_landing: AircraftLanding):
                        "late_penalty": late_penalty, "runway_assignment": runway_assignment, "landing_order": landing_order}
     return status, model_variables
 
-
 def problem_2(aircraft_landing: AircraftLanding):
+    """
+    Solves Problem 2: Minimize the makespan (latest landing time).
+
+    Args:
+        aircraft_landing (AircraftLanding): The problem instance.
+
+    Returns:
+        Tuple[str, dict]: The solver status and model variables.
+    """
     model = Model("Minimizing Makespan")
 
     landing_times_decision = [model.add_var(var_type=CONTINUOUS, name=f"landing_time_{i}")
@@ -114,8 +155,16 @@ def problem_2(aircraft_landing: AircraftLanding):
                        "runway_assignment": runway_assignment, "landing_order": landing_order}
     return status, model_variables
 
-
 def problem_3(aircraft_landing: AircraftLanding):
+    """
+    Solves Problem 3: Minimize total lateness including parking delays.
+
+    Args:
+        aircraft_landing (AircraftLanding): The problem instance.
+
+    Returns:
+        Tuple[str, dict]: The solver status and model variables.
+    """
     model = Model("Minimizing Total Lateness with Runway Assignment")
 
     landing_times_decision = [model.add_var(var_type=CONTINUOUS, name=f"landing_time_{i}")
@@ -135,13 +184,13 @@ def problem_3(aircraft_landing: AircraftLanding):
     n_aircraft = aircraft_landing.n_aircraft
     n_runways = aircraft_landing.n_runways
     t_ir = aircraft_landing.t_ir
-    A_i = [lt.target for lt in aircraft_landing.landing_times]
+    a_i = [lt.target for lt in aircraft_landing.landing_times]
 
     for i in range(n_aircraft):
         model += lateness[i] >= xsum(
             landing_times_decision[i] + t_ir[i][r] * runway_assignment[i][r]
             for r in range(n_runways)
-        ) - A_i[i]
+        ) - a_i[i]
 
     model.objective = minimize(xsum(lateness))
 
@@ -151,11 +200,27 @@ def problem_3(aircraft_landing: AircraftLanding):
                        "runway_assignment": runway_assignment, "landing_order": landing_order}
     return status, model_variables
 
-
 data = fetch_aircraft_data()
 
-def export_all_problem_results():
-    for i in range(12):
+def main():
+    """
+    Main entry point for solving aircraft landing problem optimization and exporting results.
+
+    Command-line arguments:
+    - seed: A random seed integer to initialize the datasets.
+    - n_runways: The number of runways to be used in the optimization problem.
+    - n_files (optional): The number of files to check (default is 12, mainly use for fast unit testing).
+    """
+
+    parser = argparse.ArgumentParser(description="Run aircraft landing problem optimization and export results.")
+    parser.add_argument("seed", type=int, help="Random seed for the datasets.")
+    parser.add_argument("n_runways", type=int, help="Number of runways for the optimization.")
+    parser.add_argument("--n_files", type=int, default=12, help="Number of files to check (default is 12).")
+    args = parser.parse_args()
+
+    for i in range(min(args.n_files, 12)):
+        data[i].seed = args.seed
+        data[i].n_runways = args.n_runways
         data_status, model_vars = problem_1(data[i])
         export_solution_info_json(data[i], data_status, model_vars, f"result_problem_1_{i + 1}")
         data_status, model_vars = problem_2(data[i])
@@ -163,4 +228,6 @@ def export_all_problem_results():
         data_status, model_vars = problem_3(data[i])
         export_solution_info_json(data[i], data_status, model_vars, f"result_problem_3_{i + 1}")
 
-export_all_problem_results()
+
+if __name__ == "__main__":
+    main()
