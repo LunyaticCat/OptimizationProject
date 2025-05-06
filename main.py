@@ -44,7 +44,7 @@ def separation_constraint(model: Model, aircraft_landing: AircraftLanding, model
                       for j in range(aircraft_landing.n_aircraft)]
                      for i in range(aircraft_landing.n_aircraft)]
 
-    big_m = 1000
+    big_m = pow(2, 25)
     n_aircraft = aircraft_landing.n_aircraft
     n_runways = aircraft_landing.n_runways
     landing_times_decision = model_variables["landing_times_decision"]
