@@ -222,11 +222,11 @@ def main():
         data[i].seed = args.seed
         data[i].n_runways = args.n_runways
         data_status, model_vars = problem_1(data[i])
-        export_solution_info_json(data[i], data_status, model_vars, f"result_problem_1_{i + 1}")
+        export_solution_info_json(data[i], data_status, model_vars, f"problem1/result_{i + 1}_{args.seed}_{args.n_runways}")
         data_status, model_vars = problem_2(data[i])
-        export_solution_info_json(data[i], data_status, model_vars, f"result_problem_2_{i + 1}")
+        export_solution_info_json(data[i], data_status, model_vars, f"problem2/result_{i + 1}_{args.seed}_{args.n_runways}")
         data_status, model_vars = problem_3(data[i])
-        export_solution_info_json(data[i], data_status, model_vars, f"result_problem_3_{i + 1}")
+        export_solution_info_json(data[i], data_status, model_vars, f"problem3/result_{i + 1}_{args.seed}_{args.n_runways}")
 
 
 if __name__ == "__main__":

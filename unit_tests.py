@@ -24,16 +24,19 @@ class TestAllJsonOutputs(unittest.TestCase):
         reference_dir = "references"
         result_dir = "results"
 
-        for filename in os.listdir(reference_dir):
-            if filename.endswith(".json"):
-                with self.subTest(file=filename):
-                    ref_path = os.path.join(reference_dir, filename)
-                    res_path = os.path.join(result_dir, filename)
-                    self.assertTrue(os.path.exists(res_path), f"Missing result file for {filename}")
+        for root, _, files in os.walk(reference_dir):
+            for filename in files:
+                if filename.endswith(".json"):
+                    ref_path = os.path.join(root, filename)
+                    rel_path = os.path.relpath(ref_path, reference_dir)
+                    res_path = os.path.join(result_dir, rel_path)
 
-                    with open(ref_path, "r") as f:
-                        expected = json.load(f)
-                    with open(res_path, "r") as f:
-                        actual = json.load(f)
+                    with self.subTest(file=rel_path):
+                        self.assertTrue(os.path.exists(res_path), f"Missing result file for {rel_path}")
 
-                    self.compare_json(expected, actual, path=filename)
+                        with open(ref_path, "r") as f:
+                            expected = json.load(f)
+                        with open(res_path, "r") as f:
+                            actual = json.load(f)
+
+                        self.compare_json(expected, actual, path=rel_path)
