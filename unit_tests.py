@@ -24,6 +24,9 @@ class TestAllJsonOutputs(unittest.TestCase):
         reference_dir = "references"
         result_dir = "results"
 
+        self.assertTrue(os.path.isdir(reference_dir), f"Reference directory '{reference_dir}' does not exist")
+        self.assertTrue(os.path.isdir(result_dir), f"Result directory '{result_dir}' does not exist")
+
         for root, _, files in os.walk(reference_dir):
             for filename in files:
                 if filename.endswith(".json"):
@@ -34,9 +37,12 @@ class TestAllJsonOutputs(unittest.TestCase):
                     with self.subTest(file=rel_path):
                         self.assertTrue(os.path.exists(res_path), f"Missing result file for {rel_path}")
 
-                        with open(ref_path, "r") as f:
-                            expected = json.load(f)
-                        with open(res_path, "r") as f:
-                            actual = json.load(f)
+                        try:
+                            with open(ref_path, "r") as f:
+                                expected = json.load(f)
+                            with open(res_path, "r") as f:
+                                actual = json.load(f)
+                        except (IOError, json.JSONDecodeError) as e:
+                            self.fail(f"Error reading or parsing file '{rel_path}': {e}")
 
                         self.compare_json(expected, actual, path=rel_path)
