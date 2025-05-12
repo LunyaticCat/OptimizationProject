@@ -36,48 +36,67 @@ def separation_constraint(model: Model, aircraft_landing: AircraftLanding, model
         Tuple[Model, List[List[Var]], List[List[Var]]]: The updated model,
             runway assignment variables, and landing order variables.
     """
-    runway_assignment = [[model.add_var(var_type=BINARY, name=f"runway_{i}_{r}")
-                          for r in range(aircraft_landing.n_runways)]
-                         for i in range(aircraft_landing.n_aircraft)]
 
-    landing_order = [[model.add_var(var_type=BINARY, name=f"order_{i}_{j}")
-                      for j in range(aircraft_landing.n_aircraft)]
-                     for i in range(aircraft_landing.n_aircraft)]
-
-    big_m = pow(2, 25)
     n_aircraft = aircraft_landing.n_aircraft
     n_runways = aircraft_landing.n_runways
-    landing_times_decision = model_variables["landing_times_decision"]
+    separation_times = aircraft_landing.separation_times
+    landing_time_decision = model_variables["landing_times_decision"]
+    earliest = min(t.earliest for t in aircraft_landing.landing_times)
+    latest = max(t.latest for t in aircraft_landing.landing_times)
+    max_sep = max(separation_times[i][j] for i in range(n_aircraft)
+                  for j in range(n_aircraft) if i != j)
+    big_m = (latest - earliest) + max_sep
+
+    runway_assignment = model.add_var_tensor((n_aircraft, n_runways),
+                                             var_type=BINARY,
+                                             name="runway")
+
+    landing_order = model.add_var_tensor((n_aircraft, n_aircraft),
+                                  var_type=BINARY,
+                                  name="order")
 
     for i in range(n_aircraft):
-        model += xsum(runway_assignment[i][r] for r in range(n_runways)) == 1
+        model.add_constr(
+            xsum([landing_order[i, i]]) == 0,
+            name=f"no_self_order_{i}"
+        )
+        for j in range(i + 1, n_aircraft):
+            model.add_constr(
+                xsum([landing_order[i, j], landing_order[j, i]]) == 1,
+                name=f"order_xor_{i}_{j}"
+            )
+
     for i in range(n_aircraft):
-        for j in range(n_aircraft):
-            if i == j:
-                model += landing_order[i][j] == 0
-            else:
-                model += landing_order[i][j] + landing_order[j][i] == 1
+        model.add_constr(
+            xsum(runway_assignment[i, r] for r in range(n_runways)) == 1,
+            name=f"assign_runway_{i}"
+        )
+
     for i in range(n_aircraft):
         for j in range(n_aircraft):
             if i == j:
                 continue
-            s_ij = aircraft_landing.separation_times[i][j]
+            sep_ij = separation_times[i][j]
             for r in range(n_runways):
-                model += (
-                    landing_times_decision[j] >= landing_times_decision[i] + s_ij
-                    - big_m * (3 - runway_assignment[i][r]
-                               - runway_assignment[j][r]
-                               - landing_order[i][j])
+                model.add_constr(
+                    landing_time_decision[j]
+                    >= landing_time_decision[i] + sep_ij
+                    - big_m * (3
+                               - runway_assignment[i, r]
+                               - runway_assignment[j, r]
+                               - landing_order[i, j]),
+                    name=f"sep_{i}_{j}_runway{r}"
                 )
 
     return model, runway_assignment, landing_order
 
-def problem_1(aircraft_landing: AircraftLanding):
+def problem_1(aircraft_landing: AircraftLanding, max_problem_time):
     """
     Solves Problem 1: Minimize weighted deviation from target landing times.
 
     Args:
         aircraft_landing (AircraftLanding): The problem instance.
+        max_problem_time (int): The maximum time to spend on each problem in seconds.
 
     Returns:
         Tuple[str, dict]: The solver status and model variables.
@@ -113,18 +132,19 @@ def problem_1(aircraft_landing: AircraftLanding):
         for i, lt in enumerate(aircraft_landing.landing_times)
     ))
 
-    status =  model.optimize(max_seconds=2)
+    status =  model.optimize(max_seconds=max_problem_time)
 
     model_variables = {"landing_times_decision": landing_times_decision, "early_penalty": early_penalty,
                        "late_penalty": late_penalty, "runway_assignment": runway_assignment, "landing_order": landing_order}
     return status, model_variables
 
-def problem_2(aircraft_landing: AircraftLanding):
+def problem_2(aircraft_landing: AircraftLanding, max_problem_time):
     """
     Solves Problem 2: Minimize the makespan (latest landing time).
 
     Args:
         aircraft_landing (AircraftLanding): The problem instance.
+        max_problem_time (int): The maximum time to spend on each problem in seconds.
 
     Returns:
         Tuple[str, dict]: The solver status and model variables.
@@ -149,18 +169,19 @@ def problem_2(aircraft_landing: AircraftLanding):
 
     model.objective = minimize(makespan)
 
-    status = model.optimize(max_seconds=2)
+    status = model.optimize(max_seconds=max_problem_time)
 
     model_variables = {"landing_times_decision": landing_times_decision, "makespan": makespan,
                        "runway_assignment": runway_assignment, "landing_order": landing_order}
     return status, model_variables
 
-def problem_3(aircraft_landing: AircraftLanding):
+def problem_3(aircraft_landing: AircraftLanding, max_problem_time):
     """
     Solves Problem 3: Minimize total lateness including parking delays.
 
     Args:
         aircraft_landing (AircraftLanding): The problem instance.
+        max_problem_time (int): The maximum time to spend on each problem in seconds.
 
     Returns:
         Tuple[str, dict]: The solver status and model variables.
@@ -194,7 +215,7 @@ def problem_3(aircraft_landing: AircraftLanding):
 
     model.objective = minimize(xsum(lateness))
 
-    status = model.optimize(max_seconds=2)
+    status = model.optimize(max_seconds=max_problem_time)
 
     model_variables = {"landing_times_decision": landing_times_decision, "lateness": lateness,
                        "runway_assignment": runway_assignment, "landing_order": landing_order}
@@ -216,16 +237,18 @@ def main():
     parser.add_argument("seed", type=int, help="Random seed for the datasets.")
     parser.add_argument("n_runways", type=int, help="Number of runways for the optimization.")
     parser.add_argument("--n_files", type=int, default=12, help="Number of files to check (default is 12).")
+    parser.add_argument("--max_time", type=int, default=60, help="Maximum time to spend on each problem in seconds (default is 60).")
     args = parser.parse_args()
 
     for i in range(min(args.n_files, 12)):
         data[i].seed = args.seed
         data[i].n_runways = args.n_runways
-        data_status, model_vars = problem_1(data[i])
+        max_time = args.max_time
+        data_status, model_vars = problem_1(data[i], max_time)
         export_solution_info_json(data[i], data_status, model_vars, f"problem1/result_{i + 1}_{args.seed}_{args.n_runways}")
-        data_status, model_vars = problem_2(data[i])
+        data_status, model_vars = problem_2(data[i], max_time)
         export_solution_info_json(data[i], data_status, model_vars, f"problem2/result_{i + 1}_{args.seed}_{args.n_runways}")
-        data_status, model_vars = problem_3(data[i])
+        data_status, model_vars = problem_3(data[i], max_time)
         export_solution_info_json(data[i], data_status, model_vars, f"problem3/result_{i + 1}_{args.seed}_{args.n_runways}")
 
 
