@@ -231,6 +231,7 @@ def main():
     - seed: A random seed integer to initialize the datasets.
     - n_runways: The number of runways to be used in the optimization problem.
     - n_files (optional): The number of files to check (default is 12, mainly use for fast unit testing).
+    - max_time (optional): The maximum time to spend on each problem in seconds (default is 60).
     """
 
     parser = argparse.ArgumentParser(description="Run aircraft landing problem optimization and export results.")
