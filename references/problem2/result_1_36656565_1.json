@@ -1,0 +1,130 @@
+{
+    "status": "OPTIMAL",
+    "landing_times": [191.0, 195.0, 143.0, 96.0, 110.0, 168.0, 124.0, 176.0, 135.0, 160.0],
+    "penalties": [],
+    "makespan": 195.0,
+    "runway_assignments": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "landing_order": [
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 0, 0, 0, 1, 0, 1, 0, 1],
+        [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 0, 0, 1, 1, 1, 1, 1],
+        [1, 1, 0, 0, 0, 0, 0, 1, 0, 0],
+        [1, 1, 1, 0, 0, 1, 0, 1, 1, 1],
+        [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 0, 0, 1, 0, 1, 0, 1],
+        [1, 1, 0, 0, 0, 1, 0, 1, 0, 0]
+    ],
+    "aircraft_data": {
+        "n_aircraft": 10,
+        "n_runways": 1,
+        "freeze_time": 10.0,
+        "landing_times": [
+            {
+                "appearance_time": 54.0,
+                "earliest": 129.0,
+                "target": 155.0,
+                "latest": 559.0,
+                "penalty_cost_before_target": 10.0,
+                "penalty_cost_after_target": 10.0
+            },
+            {
+                "appearance_time": 120.0,
+                "earliest": 195.0,
+                "target": 258.0,
+                "latest": 744.0,
+                "penalty_cost_before_target": 10.0,
+                "penalty_cost_after_target": 10.0
+            },
+            {
+                "appearance_time": 14.0,
+                "earliest": 89.0,
+                "target": 98.0,
+                "latest": 510.0,
+                "penalty_cost_before_target": 30.0,
+                "penalty_cost_after_target": 30.0
+            },
+            {
+                "appearance_time": 21.0,
+                "earliest": 96.0,
+                "target": 106.0,
+                "latest": 521.0,
+                "penalty_cost_before_target": 30.0,
+                "penalty_cost_after_target": 30.0
+            },
+            {
+                "appearance_time": 35.0,
+                "earliest": 110.0,
+                "target": 123.0,
+                "latest": 555.0,
+                "penalty_cost_before_target": 30.0,
+                "penalty_cost_after_target": 30.0
+            },
+            {
+                "appearance_time": 45.0,
+                "earliest": 120.0,
+                "target": 135.0,
+                "latest": 576.0,
+                "penalty_cost_before_target": 30.0,
+                "penalty_cost_after_target": 30.0
+            },
+            {
+                "appearance_time": 49.0,
+                "earliest": 124.0,
+                "target": 138.0,
+                "latest": 577.0,
+                "penalty_cost_before_target": 30.0,
+                "penalty_cost_after_target": 30.0
+            },
+            {
+                "appearance_time": 51.0,
+                "earliest": 126.0,
+                "target": 140.0,
+                "latest": 573.0,
+                "penalty_cost_before_target": 30.0,
+                "penalty_cost_after_target": 30.0
+            },
+            {
+                "appearance_time": 60.0,
+                "earliest": 135.0,
+                "target": 150.0,
+                "latest": 591.0,
+                "penalty_cost_before_target": 30.0,
+                "penalty_cost_after_target": 30.0
+            },
+            {
+                "appearance_time": 85.0,
+                "earliest": 160.0,
+                "target": 180.0,
+                "latest": 657.0,
+                "penalty_cost_before_target": 30.0,
+                "penalty_cost_after_target": 30.0
+            }
+        ],
+        "separation_times": [
+            [99999.0, 3.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0],
+            [3.0, 99999.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0],
+            [15.0, 15.0, 99999.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0],
+            [15.0, 15.0, 8.0, 99999.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0],
+            [15.0, 15.0, 8.0, 8.0, 99999.0, 8.0, 8.0, 8.0, 8.0, 8.0],
+            [15.0, 15.0, 8.0, 8.0, 8.0, 99999.0, 8.0, 8.0, 8.0, 8.0],
+            [15.0, 15.0, 8.0, 8.0, 8.0, 8.0, 99999.0, 8.0, 8.0, 8.0],
+            [15.0, 15.0, 8.0, 8.0, 8.0, 8.0, 8.0, 99999.0, 8.0, 8.0],
+            [15.0, 15.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 99999.0, 8.0],
+            [15.0, 15.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 99999.0]
+        ],
+        "t_ir": [
+            [17],
+            [9],
+            [9],
+            [5],
+            [12],
+            [4],
+            [7],
+            [14],
+            [13],
+            [11]
+        ]
+    }
+}
