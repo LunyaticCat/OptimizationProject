@@ -3,7 +3,8 @@ import argparse
 from mip import Model, xsum, BINARY, CONTINUOUS, minimize
 from aircraft import AircraftLanding
 from data_fetcher import fetch_aircraft_data
-from export_result import export_solution_info_json
+from export_result import export_solution_info_json, summarize_all_results_to_csv
+
 
 def time_window_constraint(model: Model, aircraft_landing: AircraftLanding, model_variables):
     """
@@ -251,7 +252,6 @@ def main():
         export_solution_info_json(data[i], data_status, model_vars, f"problem2/result_{i + 1}_{args.seed}_{args.n_runways}")
         data_status, model_vars = problem_3(data[i], max_time)
         export_solution_info_json(data[i], data_status, model_vars, f"problem3/result_{i + 1}_{args.seed}_{args.n_runways}")
-
 
 if __name__ == "__main__":
     main()
