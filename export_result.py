@@ -20,6 +20,7 @@ def export_solution_info_json(aircraft_landing_problem, status, model_variables,
             - early_penalty
             - late_penalty
             - makespan
+            - lateness
             - runway_assignment
             - landing_order
         filename (str): Output file path (without extension).
@@ -29,6 +30,7 @@ def export_solution_info_json(aircraft_landing_problem, status, model_variables,
         'landing_times': [],
         'penalties': [],
         'makespan': None,
+        'lateness': None,
         'runway_assignments': [],
         'landing_order': []
     }
@@ -65,6 +67,10 @@ def export_solution_info_json(aircraft_landing_problem, status, model_variables,
         makespan_var = model_variables.get('makespan')
         if makespan_var is not None:
             data['makespan'] = round(makespan_var.x, 2)
+
+        lateness_var = model_variables.get('lateness')
+        if lateness_var is not None:
+            data['lateness'] = round(lateness_var.x, 2)
 
         for assignments in model_variables.get('runway_assignment', []):
             assigned = [i for i, var in enumerate(assignments) if var.x >= 0.99]

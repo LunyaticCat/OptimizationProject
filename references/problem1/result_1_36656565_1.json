@@ -44,6 +44,7 @@
         }
     ],
     "makespan": null,
+    "lateness": null,
     "runway_assignments": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     "landing_order": [
         [0, 1, 0, 0, 0, 0, 0, 0, 0, 1],

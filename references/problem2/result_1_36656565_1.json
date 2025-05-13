@@ -3,6 +3,7 @@
     "landing_times": [191.0, 195.0, 143.0, 96.0, 110.0, 168.0, 124.0, 176.0, 135.0, 160.0],
     "penalties": [],
     "makespan": 195.0,
+    "lateness": null,
     "runway_assignments": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     "landing_order": [
         [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],

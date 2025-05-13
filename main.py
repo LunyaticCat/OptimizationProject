@@ -6,9 +6,9 @@ from data_fetcher import fetch_aircraft_data
 from export_result import export_solution_info_json, summarize_all_results_to_csv
 
 
-def time_window_constraint(model: Model, aircraft_landing: AircraftLanding, model_variables):
+def time_separation_constraint(model: Model, aircraft_landing: AircraftLanding, model_variables):
     """
-    Adds time window constraints for each aircraft's landing.
+    Assure each aircraft land either before or after the target landing time.
 
     Args:
         model (Model): The optimization model.
@@ -125,7 +125,7 @@ def problem_1(aircraft_landing: AircraftLanding, max_problem_time):
         model, aircraft_landing, model_variables
     )
 
-    model = time_window_constraint(model, aircraft_landing, model_variables)
+    model = time_separation_constraint(model, aircraft_landing, model_variables)
 
     model.objective = minimize(xsum(
         lt.penalty_cost_before_target * early_penalty[i] +
@@ -166,6 +166,8 @@ def problem_2(aircraft_landing: AircraftLanding, max_problem_time):
         model, aircraft_landing, model_variables
     )
 
+    model = time_separation_constraint(model, aircraft_landing, model_variables)
+
     model.objective = minimize(makespan)
 
     status = model.optimize(max_seconds=max_problem_time)
@@ -199,7 +201,7 @@ def problem_3(aircraft_landing: AircraftLanding, max_problem_time):
         model, aircraft_landing, model_variables
     )
 
-    model = time_window_constraint(model, aircraft_landing, model_variables)
+    model = time_separation_constraint(model, aircraft_landing, model_variables)
 
     n_aircraft = aircraft_landing.n_aircraft
     n_runways = aircraft_landing.n_runways
@@ -216,7 +218,7 @@ def problem_3(aircraft_landing: AircraftLanding, max_problem_time):
 
     status = model.optimize(max_seconds=max_problem_time)
 
-    model_variables = {"landing_times_decision": landing_times_decision, "lateness": lateness,
+    model_variables = {"landing_times_decision": landing_times_decision, "lateness": xsum(lateness),
                        "runway_assignment": runway_assignment, "landing_order": landing_order}
     return status, model_variables
 
