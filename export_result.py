@@ -109,15 +109,10 @@ def export_solution_info_json(aircraft_landing_problem, status, model_variables,
     print(f"Solution export completed: {out_path}")
 
 
-import os
-import json
-import glob
-import csv
-
 def summarize_all_results_to_csv(result_folder='results', problems=(1, 2, 3), output_file='summary.csv'):
     """
     Summarize structured solution results from multiple files in each problem folder and write to a CSV file.
-    The output can be copied to Google Sheets. Results are sorted by result number and problem number.
+    The output includes an 'Optimal Value' column showing makespan, total penalty, or lateness.
 
     Args:
         result_folder (str): Base folder containing problem subdirectories.
@@ -125,7 +120,7 @@ def summarize_all_results_to_csv(result_folder='results', problems=(1, 2, 3), ou
         output_file (str): Path to output the summary CSV file (default is 'summary.csv').
     """
     summary = []
-    headers = ['File', 'Problem', 'Status', 'Landing Times']
+    headers = ['File', 'Problem', 'Status', 'Landing Times', 'Optimal Value']
 
     for i in problems:
         problem_dir = os.path.join(result_folder, f'problem{i}')
@@ -133,10 +128,9 @@ def summarize_all_results_to_csv(result_folder='results', problems=(1, 2, 3), ou
         matches = glob.glob(pattern)
 
         if not matches:
-            summary.append([f"result_{i+1}", f"Problem {i}", 'No result file found', '-'])
+            summary.append([f"result_{i + 1}", f"Problem {i}", 'No result file found', '-', '-'])
             continue
 
-        # Process all result files for this problem
         for file_path in matches:
             file_name = os.path.basename(file_path)
 
@@ -145,19 +139,29 @@ def summarize_all_results_to_csv(result_folder='results', problems=(1, 2, 3), ou
 
             status = data.get('status', 'UNKNOWN')
             landing_times = data.get('landing_times', [])
-
             lt_str = ', '.join(map(str, landing_times)) if landing_times else '-'
 
-            # Add the result to the summary
-            result_num = int(file_name.split('_')[1])  # Extract result number from filename
-            summary.append([file_name, f"Problem {i}", status, lt_str, result_num, i])
+            # Determine the optimal value (makespan > total_penalty > lateness)
+            optimal_value = '-'
+            for key in ['makespan', 'total_penalty', 'lateness']:
+                value = data.get(key)
+                if value is not None:
+                    optimal_value = value
+                    break
 
-    summary.sort(key=lambda x: (x[4], x[5]))
+            # Append all necessary data for sorting
+            result_num = int(re.search(r'result_(\d+)', file_name).group(1))
+            summary.append([file_name, f"Problem {i}", status, lt_str, optimal_value, result_num, i])
 
+    # Sort by result number and problem number
+    summary.sort(key=lambda x: (x[5], x[6]))
+
+    # Write to CSV
     with open(output_file, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(headers)  # Write the header
+        writer.writerow(headers)
         for row in summary:
-            writer.writerow(row[:4])
+            writer.writerow(row[:5])  # Write only the display columns
 
     print(f"Summary written to {output_file}")
+
