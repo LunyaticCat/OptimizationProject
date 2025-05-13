@@ -4,6 +4,7 @@
     "penalties": [],
     "makespan": 195.0,
     "lateness": null,
+    "total_penalty": null,
     "runway_assignments": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     "landing_order": [
         [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],

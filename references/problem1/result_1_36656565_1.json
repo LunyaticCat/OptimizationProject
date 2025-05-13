@@ -45,6 +45,7 @@
     ],
     "makespan": null,
     "lateness": null,
+    "total_penalty": 700.0,
     "runway_assignments": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     "landing_order": [
         [0, 1, 0, 0, 0, 0, 0, 0, 0, 1],

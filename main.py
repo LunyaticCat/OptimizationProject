@@ -127,16 +127,18 @@ def problem_1(aircraft_landing: AircraftLanding, max_problem_time):
 
     model = time_separation_constraint(model, aircraft_landing, model_variables)
 
-    model.objective = minimize(xsum(
+    total_penalty = xsum(
         lt.penalty_cost_before_target * early_penalty[i] +
         lt.penalty_cost_after_target * late_penalty[i]
         for i, lt in enumerate(aircraft_landing.landing_times)
-    ))
+    )
+
+    model.objective = minimize(total_penalty)
 
     status =  model.optimize(max_seconds=max_problem_time)
 
     model_variables = {"landing_times_decision": landing_times_decision, "early_penalty": early_penalty,
-                       "late_penalty": late_penalty, "runway_assignment": runway_assignment, "landing_order": landing_order}
+                       "late_penalty": late_penalty, "total_penalty": total_penalty, "runway_assignment": runway_assignment, "landing_order": landing_order}
     return status, model_variables
 
 def problem_2(aircraft_landing: AircraftLanding, max_problem_time):
