@@ -166,8 +166,6 @@ def problem_2(aircraft_landing: AircraftLanding, max_problem_time):
         model, aircraft_landing, model_variables
     )
 
-    model = time_window_constraint(model, aircraft_landing, model_variables)
-
     model.objective = minimize(makespan)
 
     status = model.optimize(max_seconds=max_problem_time)
